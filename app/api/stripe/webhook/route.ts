@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 
@@ -28,12 +28,17 @@ export async function POST(request: Request) {
     const invoiceId = session.metadata?.invoice_id
 
     if (invoiceId) {
-      const supabase = await createClient()
+      const supabase = createAdminClient()
 
-      await supabase
+      const { error } = await supabase
         .from('invoices')
         .update({ status: 'paid' })
         .eq('id', invoiceId)
+
+      if (error) {
+        console.error('Failed to mark invoice paid:', error.message)
+        return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
+      }
     }
   }
 

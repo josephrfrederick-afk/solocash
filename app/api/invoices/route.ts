@@ -89,3 +89,49 @@ export async function PATCH(request: Request) {
 
   return NextResponse.json({ success: true })
 }
+
+export async function DELETE(request: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const id = new URL(request.url).searchParams.get('id')
+  if (!id) {
+    return NextResponse.json({ error: 'Invoice id required' }, { status: 400 })
+  }
+
+  const { data: invoice } = await supabase
+    .from('invoices')
+    .select('id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!invoice) {
+    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
+  }
+
+  const { error: itemsError } = await supabase
+    .from('invoice_items')
+    .delete()
+    .eq('invoice_id', id)
+
+  if (itemsError) {
+    return NextResponse.json({ error: itemsError.message }, { status: 400 })
+  }
+
+  const { error: invoiceError } = await supabase
+    .from('invoices')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (invoiceError) {
+    return NextResponse.json({ error: invoiceError.message }, { status: 400 })
+  }
+
+  return NextResponse.json({ success: true })
+}

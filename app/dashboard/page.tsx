@@ -23,7 +23,7 @@ export default async function Dashboard() {
   // Safely fetch invoices with line items
   const { data: invoicesData } = await supabase
     .from('invoices')
-    .select('*, clients(name), invoice_items(*)')
+    .select('*, clients(name, email, company), invoice_items(*)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
